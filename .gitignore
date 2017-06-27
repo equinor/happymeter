@@ -1,2 +1,4 @@
 *.yml
 *.swp
+# ignore build binary
+happymeter
