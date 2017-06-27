@@ -15,4 +15,4 @@ To keep things very simple we have:
 
 ## Actions?
 
-For each button action we want to do a HTTP post to a remote web service
+For each button action we want to do a HTTP post to a remote web service running an instance of "HappyEye": https://github.com/Statoil/happyeye
