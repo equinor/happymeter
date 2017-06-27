@@ -1,0 +1,4 @@
+# Example configuration file
+happymeter:
+  endpoint: "https://happymeter.no"
+  tags: "trondheim"
