@@ -1,10 +1,10 @@
 package main
 
 import (
-	"bytes"
-	"fmt"
-	"io/ioutil"
+	"log"
 	"net/http"
+	"net/url"
+	"strings"
 )
 
 type Client struct {
@@ -23,20 +23,19 @@ func NewClient(endpoint, tags, comment string) (*Client, error) {
 }
 
 func (h *Client) Post(status string) {
-	var jsonStr = []byte(`{"happystatus":"` + status + `","tags":"` + h.Tags + `","comment":"` + h.Comment + `"}`)
-	req, err := http.NewRequest("POST", h.Endpoint, bytes.NewBuffer(jsonStr))
-	req.Header.Set("Content-Type", "application/json")
+	data := url.Values{}
+	data.Add("happystatus", status)
+	data.Add("tags", h.Tags)
+	data.Add("comment", h.Comment)
+
+	req, err := http.NewRequest("POST", h.Endpoint, strings.NewReader(data.Encode()))
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println(err)
+		log.Printf("Unable to post to happymeter:%v\n", err)
 		return
 	}
 	defer resp.Body.Close()
-
-	fmt.Println("response status:", resp.Status)
-	fmt.Println("response headers:", resp.Header)
-	body, _ := ioutil.ReadAll(resp.Body)
-	fmt.Println("response body:", string(body))
 }
