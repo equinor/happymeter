@@ -2,28 +2,20 @@ package main
 
 import (
 	"fmt"
+	"github.com/jessevdk/go-flags"
 	"github.com/stianeikeland/go-rpio"
-	yaml "gopkg.in/yaml.v2"
-	"io/ioutil"
 	"log"
 	"net"
 	"os"
 	"time"
 )
 
-var (
-	btn1   = rpio.Pin(13)
-	btn2   = rpio.Pin(5)
-	btn3   = rpio.Pin(15)
-	client *Client
-)
-
-type Config struct {
-	HappyMeter struct {
-		Url  string `yaml:"url"`
-		Tags string `yaml:"tags"`
-	}
+type Options struct {
+	Config string `short:"c" long:"config" description:"Provide a path to the input config file" required:"true"`
 }
+
+var options Options
+var parser = flags.NewParser(&options, flags.Default)
 
 func checkError(err error) {
 	if err != nil {
@@ -31,22 +23,6 @@ func checkError(err error) {
 		fmt.Println(err)
 		panic(err)
 	}
-}
-
-func getConfig(file string) (*Config, error) {
-	config := &Config{}
-	configData, err := ioutil.ReadFile(file)
-	if err != nil {
-		log.Fatalln(err)
-		return nil, err
-	}
-	err = yaml.Unmarshal(configData, &config)
-	if err != nil {
-		log.Fatalf("error: %v", err)
-		return nil, err
-	}
-
-	return config, nil
 }
 
 func getMyIP() string {
@@ -64,18 +40,34 @@ func getMyIP() string {
 	return "n/a"
 }
 
-func main() {
-	var config *Config
-	fmt.Println("=== Happymeter ===")
+type Button struct {
+	rpio.Pin
+	Pressed bool
+}
 
-	config, err := getConfig("config.yml")
+var (
+	btn1   = Button{rpio.Pin(13), false}
+	btn2   = Button{rpio.Pin(5), false}
+	btn3   = Button{rpio.Pin(27), false}
+	client *Client
+)
+
+func main() {
+	log.Println("=== Happymeter ===")
+
+	if _, err := parser.Parse(); err != nil {
+		return
+	}
+
+	var config *Config
+	config, err := ReadConfig(options.Config)
 	if err != nil {
 		panic(err)
 	}
 
 	if err := rpio.Open(); err != nil {
-		fmt.Println(err)
-		fmt.Println("Need to run as root, and device must be an Raspberry Pi!")
+		log.Println(err)
+		log.Println("Need to run as root, and device must be an Raspberry Pi!")
 		os.Exit(1)
 	}
 
@@ -87,22 +79,51 @@ func main() {
 		panic(err)
 	}
 
+	log.Println("My ip:", getMyIP())
+	log.Println("Endpoint url:", config.HappyMeter.Url)
+
 	btn1.Input()
 	btn2.Input()
 	btn3.Input()
 
+	var count = 0
 	for {
-		if val := btn1.Read(); val == rpio.Low {
-			fmt.Println("Button happy pressed!")
-			go client.Post("happy")
-		} else if val := btn2.Read(); val == rpio.Low {
-			fmt.Println("Button medium pressed!")
-			go client.Post("medium")
-		} else if val := btn3.Read(); val == rpio.Low {
-			fmt.Println("Button sad pressed!")
-			go client.Post("sad")
+		if val := btn1.Read(); val == rpio.Low && !btn1.Pressed {
+			btn1.Pressed = true
+			btn2.Pressed = false
+			btn3.Pressed = false
+			count = 0
+			log.Println("Button happy pressed!")
+			go client.Post("above")
+		}
+
+		if val := btn2.Read(); val == rpio.Low && !btn2.Pressed {
+			btn1.Pressed = false
+			btn2.Pressed = true
+			btn3.Pressed = false
+			count = 0
+			log.Println("Button medium pressed!")
+			go client.Post("average")
+		}
+
+		if val := btn3.Read(); val == rpio.Low && !btn3.Pressed {
+			btn1.Pressed = false
+			btn2.Pressed = false
+			btn3.Pressed = true
+			count = 0
+			log.Println("Button sad pressed!")
+			go client.Post("below")
 		}
 
 		time.Sleep(time.Second / 5)
+
+		if count == 3 {
+			count = 0
+			btn1.Pressed = false
+			btn2.Pressed = false
+			btn3.Pressed = false
+		}
+
+		count += 1
 	}
 }
