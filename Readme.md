@@ -32,6 +32,8 @@ For Statoil users the HappyEye instance is running here: happymeter.cloudapp.net
 You will need to start your own "HappyEye" service somewhere to be able to receive "signals" from the Happymeter.
 
 
+*Also*, remember to copy the `config.yml.template` to `config.yml` and configure it by setting the correct endpoint and your tags.
+
 ## Build
 
 Since the code needs to run on a Raspberry Pi you need to build for the ARM architecture. Typically you build on you own laptop and scp over the build binary:
@@ -39,3 +41,5 @@ Since the code needs to run on a Raspberry Pi you need to build for the ARM arch
 $ GOOS=linux GOARCH=arm go build 
 $ scp happymeter pi@192.168.43.201:~/happymeter/
 ```
+
+Note: The IP is a typical "home network" IP. You need to use the IP / DNS of your own Raspberry Pi. A tip is to simply start a WiFi hotspot on your mobile device.
