@@ -43,3 +43,8 @@ $ scp happymeter pi@192.168.43.201:~/happymeter/
 ```
 
 Note: The IP is a typical "home network" IP. You need to use the IP / DNS of your own Raspberry Pi. A tip is to simply start a WiFi hotspot on your mobile device.
+
+
+## Credits
+
+Asbjørn A. Fellinghaug (https://github.com/asbjorn)
